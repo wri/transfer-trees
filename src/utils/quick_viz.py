@@ -669,7 +669,8 @@ def style_axis(ax,
                ygrid:bool,
                title: str = None, 
                grid_color: str = '#DDDDDD',
-               tick_format: str = None):
+               tick_format: str = None,
+               fontsize: int = None):
     """
     Applies consistent styling to the axes, including labels and gridlines.
 
@@ -684,6 +685,8 @@ def style_axis(ax,
     # Remove unnecessary spines
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
 
     # Style the bottom and left spines
     ax.spines['bottom'].set_color(grid_color)
@@ -695,79 +698,93 @@ def style_axis(ax,
     ax.set_axisbelow(True)
     
     # Set the axis labels
-    ax.set_xlabel(xlabel, labelpad=15)
-    ax.set_ylabel(ylabel, labelpad=15)
+    if xlabel:
+        ax.set_xlabel(xlabel, labelpad=15, fontsize=fontsize)
+    if ylabel:
+        ax.set_ylabel(ylabel, labelpad=15, fontsize=fontsize)
     if tick_format is not None:
         ax.ticklabel_format(style='plain', axis='y')
 
     # Optionally set the title
     if title:
-        ax.set_title(title, pad=15)
+        title_fontsize = fontsize + 2 if fontsize else 14
+        ax.set_title(title, fontsize=title_fontsize, pad=15)
 
 def horizontal_stacked_bar(df: pd.DataFrame, 
-                           title: str,
+                           region: str,
                            color_dict: dict,
                            sort_by: str,
                            output_file: str = None,
-                           dpi: int = 300):
+                           dpi: int = 300,
+                           alpha: float = 1.0,
+                           figsize: tuple = (13, 8)):
     """
     Creates a horizontal 100% stacked bar chart showing the percentage 
-    area for different tree cover classes per district.
+    area for different tree cover classes per district in a given region.
 
     Parameters:
     df (pd.DataFrame): DataFrame containing the data.
-    title (str): Title of the chart.
+    region (str): Region name to filter.
     color_dict (dict): Dictionary mapping classes to colors.
-    categories (list): List of land use class columns to include in the stacked bar.
-    output_file (str): File path to save the chart (optional).
-    dpi (int): Resolution for the saved chart.
+    sort_by (str): Column to sort by.
+    output_file (str): Path to save the plot.
+    dpi (int): Resolution of saved figure.
+    alpha (float): Transparency of bars.
+    figsize (tuple): Size of the figure.
     """
-    df = df.rename(columns={'No Vegetation': 'Background'})
-    categories = ['Agroforestry', 'Natural', 'Monoculture', 'No vegetation']
+    df = df.iloc[0:26]
+    df = df.rename(columns={'No vegetation': 'Background'})
+    df = df[df["region"] == region]
+    categories = ['Agroforestry', 'Natural', 'Monoculture', 'Background']
 
-    # Normalize the data to percentages
+    # Normalize to percentages
     df[categories] = df[categories].div(df[categories].sum(axis=1), axis=0) * 100
-    
-    # Sort the DataFrame by Agroforestry percentage (descending)
+
+    # Sort by the chosen column
     df = df.sort_values(by=sort_by, ascending=False)
+    fontsize=12
 
-    fig, ax = plt.subplots(figsize=(13,8))
+    # Plot
+    fig, ax = plt.subplots(figsize=figsize)
 
-    # Initialize the left position for stacking
     left = np.zeros(len(df))
 
-    # Plot each category as a horizontal bar
     for category in categories:
         bars = ax.barh(
-            df.district, 
+            df["district"], 
             df[category], 
             left=left, 
             label=category, 
-            color=color_dict.get(category, "#cccccc")
+            color=color_dict.get(category, "#cccccc"),
+            alpha=alpha
         )
         for bar, value in zip(bars, df[category]):
-            if value > 1:
+            if value > 3:
                 ax.text(bar.get_x() + .4,
                         bar.get_y() + bar.get_height() / 2,
                         f'{value:.0f}%',
                         va='center', ha='left',
-                        color='white', fontsize=8.5)
+                        color='black', fontsize=fontsize)
         left += df[category].values
-
 
     # Style the chart
     style_axis(
         ax=ax,
-        xlabel="Percentage Area (%)",
+        xlabel=" ",
         ylabel=" ",
-        title=title,
+        title=f"Districts in {region.capitalize()} Ghana",
         xgrid=True,
-        ygrid=False
+        ygrid=False,
+        fontsize=fontsize,
     )
     ax.set_xlim(0, 100)
     ax.legend(title="System", loc="upper left", bbox_to_anchor=(1.05, 1))
     ax.set_xticks([])
+    ax.tick_params(axis='y', labelsize=fontsize)
+
+
     plt.tight_layout()
+
     if output_file:
         plt.savefig(output_file, dpi=dpi, bbox_inches='tight')
     plt.show()
