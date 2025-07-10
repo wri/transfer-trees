@@ -11,25 +11,7 @@ The application of the method is illustrated for 26 priority administrative dist
 ![Pixel-based Land Use Classification Results](images/image.png)
 
 ## ML Pipeline Overview
-
-### 1: Data Preprocessing
-- Sentinel-1/2 analysis-ready data preparation
-
-### 2: Feature Engineering
-- Extracts tree features from pre-trained CNN
-- Computes texture metrics 
-
-### 3: Model Training
-- Trains CatBoost classifier
-- Performs feature selection
-- Performs hyperparameter tuning
-
-### 4: Inference & Mapping
-- Applies trained model to generate 10m-resolution land use maps
-- Post processing steps
-
-## Contributing
-See our [contribution guidelines](https://github.com/wri/plantation_classifier/blob/master/contributing.md).
+![Processing Pipeline](images/transfer_learning_pipeline.png)
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE) file for details.
