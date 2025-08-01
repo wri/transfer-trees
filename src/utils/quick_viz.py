@@ -714,7 +714,6 @@ def horizontal_stacked_bar(df: pd.DataFrame,
                            region: str,
                            color_dict: dict,
                            sort_by: str,
-                           output_file: str = None,
                            dpi: int = 300,
                            alpha: float = 1.0,
                            figsize: tuple = (13, 8)):
@@ -732,9 +731,8 @@ def horizontal_stacked_bar(df: pd.DataFrame,
     alpha (float): Transparency of bars.
     figsize (tuple): Size of the figure.
     """
-    df = df.iloc[0:26]
-    df = df.rename(columns={'No vegetation': 'Background'})
-    df = df[df["region"] == region]
+    df = df.iloc[0:-2]
+    df = df[df["Zone"] == region]
     categories = ['Agroforestry', 'Natural', 'Monoculture', 'Background']
 
     # Normalize to percentages
@@ -742,7 +740,7 @@ def horizontal_stacked_bar(df: pd.DataFrame,
 
     # Sort by the chosen column
     df = df.sort_values(by=sort_by, ascending=False)
-    fontsize=12
+    fontsize=14
 
     # Plot
     fig, ax = plt.subplots(figsize=figsize)
@@ -772,7 +770,7 @@ def horizontal_stacked_bar(df: pd.DataFrame,
         ax=ax,
         xlabel=" ",
         ylabel=" ",
-        title=f"Districts in {region.capitalize()} Ghana",
+        title=f" ",
         xgrid=True,
         ygrid=False,
         fontsize=fontsize,
@@ -785,8 +783,7 @@ def horizontal_stacked_bar(df: pd.DataFrame,
 
     plt.tight_layout()
 
-    if output_file:
-        plt.savefig(output_file, dpi=dpi, bbox_inches='tight')
+    plt.savefig(f'../../data/figures/h_stacked_bar_{region}.png', dpi=dpi, bbox_inches='tight')
     plt.show()
 
 
@@ -839,4 +836,67 @@ def vertical_stacked_bar(df: pd.DataFrame,
     plt.tight_layout()
     if output_file:
         plt.savefig(output_file, dpi=dpi, bbox_inches='tight')
+    plt.show()
+
+def plot_feature_importance(df: pd.DataFrame, 
+                     figsize: tuple = (8, 10),
+                     fontsize= 12):
+    """
+    Plots a horizontal bar chart of selected features by their importance scores using matplotlib.
+
+    Parameters:
+    - df (pd.DataFrame): DataFrame containing 'feature_names', 'feature_importance', 'category', and 'selected' columns.
+    - figsize (tuple): Size of the figure (width, height).
+    """
+
+    # Filter to selected features only and sort
+    df_selected = df[df["selected"] == True].copy()
+    df_selected = df_selected.sort_values(by="feature_importance", ascending=True)
+
+    # Update TTC label to 'Extracted Tree Features'
+    df_selected["category"] = df_selected["category"].replace({"TTC": "Extracted Features"})
+
+    # Define an updated color palette
+    palette = {
+        "Sentinel 2": "#3182bd",                    # cool blue
+        "Sentinel 1": "#9e9ac8",                    # muted purple
+        "Extracted Features": "#006d2c",       # deep green
+        "DEM": "#fe8266",                           # light orange
+        "Texture (green band)": "#4dc049",          # more distinct green
+        "Texture (red band)": "#d73027",            # dark red
+        "Texture (NIR band)": "#fdb863"             # warm yellow-orange
+    }
+
+    # Create plot
+    fig, ax = plt.subplots(figsize=figsize)
+    y_pos = range(len(df_selected))
+    colors = [palette.get(cat, "#cccccc") for cat in df_selected['category']]
+
+    bars = ax.barh(
+        y=y_pos,
+        width=df_selected['feature_importance'],
+        color=colors,
+    )
+
+    # Axis settings
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(df_selected['feature_names'])
+    ax.set_ylim(-0.5, len(df_selected) - 0.5)
+
+    style_axis(
+        ax=ax,
+        xlabel="Feature Importance Score",
+        ylabel="Feature Indices",
+        title="Feature importance scores for selected features",
+        xgrid=False,
+        ygrid=True,
+        fontsize=fontsize,
+    )
+
+    # Add legend manually
+    unique_cats = df_selected["category"].unique()
+    handles = [plt.Rectangle((0, 0), 1, 1, color=palette[cat]) for cat in unique_cats]
+    ax.legend(handles, unique_cats, title="Feature Source", bbox_to_anchor=(1.05, 1), loc='upper left')
+
+    plt.tight_layout()
     plt.show()
