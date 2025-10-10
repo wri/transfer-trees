@@ -502,7 +502,7 @@ def roc_auc_curve_catboost(X_train_all, X_train_dropped, X_test, y_train, y_test
     plt.show()
 
 
-def horizontal_stacked_bar(df: pd.DataFrame, 
+def horizontal_stacked_bar(csv: str, 
                            region: str,
                            color_dict: dict,
                            sort_by: str,
@@ -523,7 +523,7 @@ def horizontal_stacked_bar(df: pd.DataFrame,
     alpha (float): Transparency of bars.
     figsize (tuple): Size of the figure.
     """
-    df = df.iloc[0:-2]
+    df = pd.read_csv(csv)
     df = df[df["Zone"] == region]
     categories = ['Agroforestry (ha)', 'Natural (ha)', 'Monoculture (ha)', 'Background (ha)']
     clean_categories = [re.sub(r"\s*\(.*?\)", "", c) for c in categories]
@@ -576,7 +576,7 @@ def horizontal_stacked_bar(df: pd.DataFrame,
 
     plt.tight_layout()
     df.to_csv(f'../../data/figures/h_stacked_bar_{region}_data.csv')
-    plt.savefig(f'../../data/figures/h_stacked_bar_{region}test.png', dpi=dpi, bbox_inches='tight')
+    plt.savefig(f'../../data/figures/h_stacked_bar_{region}.png', dpi=dpi, bbox_inches='tight')
     plt.show()
 
 
