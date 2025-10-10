@@ -16,6 +16,70 @@ def calculate_adjusted_area(repr_raster, prj_districts, error_dict, outfile):
     Calculates area assessment in ha for each land use class in each
     district and adjusts assessments based on model error
     '''
+
+    zonal_stats = []
+
+    with rs.open(repr_raster) as src:
+        for _, district in prj_districts.iterrows():
+            # Mask to crop raster by district for class counts
+            out_image, out_transform = mask(src, [district.geometry], crop=True)
+            district_mask = out_image[0]
+
+            unique, counts = np.unique(district_mask, return_counts=True)
+            land_use_stats = dict(zip(unique, counts))
+
+            # Pixel size (m²) -> convert class counts to hectares (unchanged)
+            pixel_width  = src.transform[0]      # X resolution
+            pixel_height = -src.transform[4]     # Y resolution
+            px_size = pixel_width * pixel_height
+            land_use_stats = {k: v * (px_size / 10000) for k, v in land_use_stats.items()}
+
+            # True geographic district area from vector geometry (m² -> ha)
+            # Assumes prj_districts is in a meter-based projected CRS
+            land_use_stats['Area (ha)'] = district.geometry.area / 10000.0
+
+            # District name
+            land_use_stats['District'] = district.ADM2_EN
+            zonal_stats.append(land_use_stats)
+
+    # Build DataFrame
+    df = pd.DataFrame(zonal_stats)
+    df = df.round().rename(columns={
+        0:   "Background (ha)",
+        1:   "Monoculture (ha)",
+        2:   "Agroforestry (ha)",
+        3:   "Natural (ha)",
+        255: "No data"
+    })
+
+    # Adjust for error (Area (ha) remains unadjusted)
+    for land_use_class, stats in error_dict.items():
+        if isinstance(stats, dict) and 'adj' in stats:
+            if land_use_class in df.columns:
+                df[land_use_class] = (df[land_use_class] * stats['adj']).round()
+
+    # Final column order
+    col_order = [
+        "District",
+        "Area (ha)",
+        "Background (ha)",
+        "Monoculture (ha)",
+        "Agroforestry (ha)",
+        "Natural (ha)",
+        "No data",
+    ]
+    df = df[[c for c in col_order if c in df.columns]]
+    df.to_csv(outfile, index=False)
+    return df
+
+def calculate_adjusted_area_original(repr_raster, prj_districts, error_dict, outfile):
+    '''
+    Requires raster that has been reprj to meter CRS, a shapefile
+    for the 26 priority districts, and a dictionary containing error
+    statistics for each land use class
+    Calculates area assessment in ha for each land use class in each
+    district and adjusts assessments based on model error
+    '''
     
     zonal_stats = []
     
@@ -33,15 +97,17 @@ def calculate_adjusted_area(repr_raster, prj_districts, error_dict, outfile):
             land_use_stats = {k: v * (px_size / 10000) for k, v in land_use_stats.items()}
             
             # Add district name
-            land_use_stats['district'] = district.ADM2_EN
+            land_use_stats['District'] = district.ADM2_EN
             zonal_stats.append(land_use_stats)
+    
+    # add new column "Area (ha)"
 
     df = pd.DataFrame(zonal_stats)
     df = df.round(2).rename(columns={
-        0: "Background",
-        1: "Monoculture",
-        2: "Agroforestry",
-        3: "Natural",
+        0:   "Background (ha)",
+        1:   "Monoculture (ha)",
+        2:   "Agroforestry (ha)",
+        3:   "Natural (ha)",
         255: "No data"
     })
     
@@ -51,6 +117,17 @@ def calculate_adjusted_area(repr_raster, prj_districts, error_dict, outfile):
             if land_use_class in df.columns:
                 df[land_use_class] = (df[land_use_class] * stats['adj']).round()
 
+    # Final column order (fixed missing comma and included Monoculture (ha))
+    col_order = [
+        "District",
+        "Area (ha)", # this is the new column
+        "Background (ha)",
+        "Monoculture (ha)",
+        "Agroforestry (ha)",
+        "Natural (ha)",
+        "No data",
+    ]
+    df = df[[c for c in col_order if c in df.columns]]
     df.to_csv(outfile, index=False)
     return df
 
@@ -84,17 +161,17 @@ def area_assessment_table(input_f, output_f, include_summary_row=True):
     district_region.update({
         district: 'south' for district in west.ADM2_EN
     })
-    df['Zone'] = df['district'].map(district_region)
+    df['Zone'] = df['District'].map(district_region)
 
    # Rename columns for clarity
-    df = df.rename(columns={
-        'Monoculture': 'Monoculture (ha)',
-        'Agroforestry': 'Agroforestry (ha)',
-        'Natural': 'Natural (ha)',
-    })
+    # df = df.rename(columns={
+    #     'Monoculture': 'Monoculture (ha)',
+    #     'Agroforestry': 'Agroforestry (ha)',
+    #     'Natural': 'Natural (ha)',
+    # })
 
     #df['Total Area (ha)'] = df[['Monoculture (ha)', 'Agroforestry (ha)', 'Natural (ha)', 'Background', 'No data']].sum(axis=1)
-    df_pub = df[['Zone', 'district', 'Monoculture (ha)', 'Agroforestry (ha)', 'Natural (ha)', #'Total Area (ha)'
+    df_pub = df[['Zone', 'District', 'Area (ha)', 'Monoculture (ha)', 'Agroforestry (ha)', 'Natural (ha)', #'Total Area (ha)'
                  ]]
     df_pub = df_pub.sort_values(by='Zone', ascending=True).reset_index(drop=True)
 
@@ -109,7 +186,7 @@ def area_assessment_table(input_f, output_f, include_summary_row=True):
         for region, row in region_totals.iterrows():
             summary_rows.append({
                 'Zone': region.upper(),
-                'district': 'TOTAL',
+                'District': 'TOTAL',
                 'Monoculture (ha)': row['Monoculture (ha)'],
                 'Agroforestry (ha)': row['Agroforestry (ha)'],
                 'Natural (ha)': row['Natural (ha)'],
@@ -118,8 +195,7 @@ def area_assessment_table(input_f, output_f, include_summary_row=True):
         df_pub = pd.concat([df_pub, pd.DataFrame(summary_rows)], ignore_index=True)
 
     # Final step: round all area columns to nearest 10 hectares
-    area_cols = ['Monoculture (ha)', 'Agroforestry (ha)', 'Natural (ha)', #'Total Area (ha)'
-                 ]
+    area_cols = ['Area (ha)', 'Monoculture (ha)', 'Agroforestry (ha)', 'Natural (ha)']
     df_pub[area_cols] = df_pub[area_cols].round(-1)
 
     # Save output
