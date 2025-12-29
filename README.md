@@ -1,38 +1,13 @@
-# Transfer Learning for Tree Cover Classification in Ghana
+# Transfer Learning for Land Use Classification in Ghana
 
-This repository contains the code for a novel transfer learning-based approach to classify tree systems in Ghana using Sentinel-1 and Sentinel-2 imagery. By leveraging pre-trained convolutional neural networks and feature engineering, this method distinguishes between natural forests, monoculture plantations, and agroforestry systems—a critical step for monitoring deforestation and facilitating effective landscape management.
+**Problem Statement**: Traditional classification methods struggle to distinguish natural and planted tree systems in cloud-prone, label scarce, heterogeneous landscapes like Ghana. We hypothesize that a transfer learning approach – leveraging [extracted tree features from a high performing neural network](https://github.com/wri/sentinel-tree-cover) – can significantly improve classification accuracy. To test this hypothesis, we apply a gradient boosting classification algorithm (CatBoost) to a combination of Sentinel-2 images, gray-level co-occurrence matrix (GLCM) texture features and extracted tree features. We assess whether the extracted features and GLCM texture features accelerate model learning and perform benchmarking against a standard deep learning technique. Through a feature selection exercise, we identify and validate the added value of the transferred features.
 
-* **Why it matters**: Traditional classification methods struggle to distinguish natural and planted tree systems in cloud-prone, heterogeneous landscapes like Ghana.
-* **What’s new**: We integrate [deep learning-based tree features](https://github.com/wri/sentinel-tree-cover) and texture analysis to improve classification accuracy.
-* **Who is this for?** Data scientists, geospatial analysts, and researchers working with remote sensing data for land use classification.
-
-The application of the method is illustrated for 26 priority administrative districts throughout Ghana. The final product is a 10m resolution land use map of Ghana for the year 2020 that distinguishes between natural, monoculture and agroforestry systems.  
+Through a collaboration with Ghana's Environmnetal Protection Agency, the application of the method is illustrated for 26 priority administrative districts. The final product is a 10m resolution land use map of Ghana for the year 2020 that distinguishes between natural, monoculture and agroforestry systems.  
 
 ![Pixel-based Land Use Classification Results](images/image.png)
 
 ## ML Pipeline Overview
-
-### 1: Data Preprocessing
-- Sentinel-1/2 analysis-ready data preparation
-
-### 2: Feature Engineering
-- Extracts tree features from pre-trained CNN
-- Computes texture metrics 
-
-### 3: Model Training
-- Trains CatBoost classifier
-- Performs feature selection
-- Performs hyperparameter tuning
-
-### 4: Inference & Mapping
-- Applies trained model to generate 10m-resolution land use maps
-- Post processing steps
-
-## Contributing
-See our [contribution guidelines](https://github.com/wri/plantation_classifier/blob/master/contributing.md).
-
-## License
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE) file for details.
+![Processing Pipeline](images/transfer_learning_pipeline.png)
 
 ## Repository Organization
 ```
@@ -102,3 +77,8 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE) f
 ├── .dockerignore                  
 └── .dvcignore                   
 ```
+## License
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE) file for details.
+
+## Citation
+Ertel, J., Brandt, J., Glen, E., & Rognstad, R. Transfer Learning for Detecting Natural, Monoculture, and Agroforestry Systems in Ghana. Technical Note. Washington, DC: World Resources Institute. _(Expected August 2025)_

@@ -10,6 +10,7 @@ from catboost import CatBoostClassifier
 from sklearn.metrics import roc_curve, auc
 from sklearn.model_selection import learning_curve
 import pandas as pd
+import re
 # from sklearn.metrics import roc_curve, roc_auc_score, precision_recall_curve, confusion_matrix, ConfusionMatrixDisplay
 
 # Base
@@ -19,6 +20,54 @@ import pandas as pd
 #     │   ├── divide.py
 #     ├── histograms
 #     ├── confusion matrix
+
+def style_axis(ax, 
+               xlabel: str, 
+               ylabel: str, 
+               xgrid: bool,
+               ygrid:bool,
+               title: str = None, 
+               grid_color: str = '#DDDDDD',
+               tick_format: str = None,
+               fontsize: int = None):
+    """
+    Applies consistent styling to the axes, including labels and gridlines.
+
+    Parameters:
+    ax (matplotlib.axes.Axes): The axis to be styled.
+    xlabel (str): The label for the x-axis.
+    ylabel (str): The label for the y-axis.
+    gridlines (bool): Option to add gridlines to the chart background.
+    title (str, optional): The title of the chart.
+    grid_color (str, optional): The color of the gridlines. Default is '#DDDDDD'.
+    """
+    # Remove unnecessary spines
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
+    # Style the bottom and left spines
+    ax.spines['bottom'].set_color(grid_color)
+    ax.spines['left'].set_color(grid_color)
+    
+    # Set gridlines and axis below the plot elements
+    ax.yaxis.grid(ygrid, color=grid_color)
+    ax.xaxis.grid(xgrid,color=grid_color)
+    ax.set_axisbelow(True)
+    
+    # Set the axis labels
+    if xlabel:
+        ax.set_xlabel(xlabel, labelpad=15, fontsize=fontsize)
+    if ylabel:
+        ax.set_ylabel(ylabel, labelpad=15, fontsize=fontsize)
+    if tick_format is not None:
+        ax.ticklabel_format(style='plain', axis='y')
+
+    # Optionally set the title
+    if title:
+        title_fontsize = fontsize + 2 if fontsize else 14
+        ax.set_title(title, fontsize=title_fontsize, pad=15)
 
 def heat_multiplot(matrices, cbarmin, cbarmax,  nrows = 13, ncols = 6):
     '''
@@ -111,188 +160,6 @@ def heat_compare_preds(location: str, tile_idx_a: tuple, tile_idx_b: tuple):
 
     return None
 
-def hist_compare_s2(location: str, tile_idx_a: tuple, tile_idx_b: tuple, title:str, tile_idx_c: tuple = None):
-    '''
-    Type: Matplotlib histogram
-    Purpose: Compare and visualize histograms of Sentinel-2 data for two specific tiles in a given location.
-
-    Parameters:
-    - location (str): The country.
-    - tile_idx_a (tuple): The coordinates (x, y) of the first tile to compare.
-    - tile_idx_b (tuple): The coordinates (x, y) of the second tile to compare.
-    - title (str): The title for the histogram comparison plot, describing the area.
-
-    This function loads analysis ready data for two tiles specified by their coordinates (tile_idx_a and tile_idx_b). 
-    It then indexes the array to creates histograms of Sentinel-2 data and displays 
-    them in a single plot for visual comparison.
-
-    Returns:
-    None
-    
-    '''
-    x_a, y_a = tile_idx_a[0], tile_idx_a[1]
-    x_b, y_b = tile_idx_b[0], tile_idx_b[1]
-    ard_a = hkl.load(f'../../tmp/{location}/{str(x_a)}/{str(y_a)}/ard/{str(x_a)}X{str(y_a)}Y_ard.hkl')
-    ard_b = hkl.load(f'../../tmp/{location}/{str(x_b)}/{str(y_b)}/ard/{str(x_b)}X{str(y_b)}Y_ard.hkl')
-    
-    s2_a = ard_a[..., 0:10]
-    s2_b = ard_b[..., 0:10]
-    
-    plt.figure(figsize=(6,4))
-    binwidth = .01
-    min = s2_a.min()
-    max = s2_a.max()
-
-    # this asks for 33 binds between .01 and .6 -- np.arange(min, max + binwidth, binwidth)
-    plt.hist(s2_a.flatten(), alpha=0.5, label=str(tile_idx_a), edgecolor="black", bins=np.arange(min, max + binwidth, binwidth))
-    plt.hist(s2_b.flatten(), alpha=0.3, label=str(tile_idx_b), edgecolor="black", bins=np.arange(min, max + binwidth, binwidth))
-    plt.xlim(0.0, 0.6)
-    plt.xticks(np.arange(0.0, 0.6, 0.1))
-    plt.title(title)
-    plt.legend();
-
-    if tile_idx_c is not None:
-        x_c, y_c = tile_idx_c[0], tile_idx_c[1]
-        ard_c = hkl.load(f'../../tmp/{location}/{str(x_c)}/{str(y_c)}/ard/{str(x_c)}X{str(y_c)}Y_ard.hkl')
-        s2_c = ard_c[..., 0:10]
-        plt.hist(s2_c.flatten(), alpha=0.3, label=str(tile_idx_c), edgecolor="black", bins=np.arange(min, max + binwidth, binwidth))
-        plt.legend();
-
-    return None
-
-def hist_compare_s2_byband(location: str, 
-                           tile_idx_a: tuple, 
-                           tile_idx_b: tuple,  
-                           tile_idx_c: tuple,
-                           title:str,
-                           color_dict: dict,
-                           output_file: str = None
-                           ):
-    '''
-    Each s2 band is plotted as it's own hist.
-    Parameters:
-    - location (str): The country.
-    - tile_idx_a (tuple): The coordinates (x, y) of the first tile.
-    - tile_idx_b (tuple): The coordinates (x, y) of the second tile.
-    - tile_idx_c (tuple): The coordinates (x, y) of the third tile.
-    - title (str): The base title for the histograms, describing the area.
-    
-    '''
-    def load_ard(tile_idx):
-        x, y = tile_idx
-        ard = hkl.load(f'../../tmp/{location}/{str(x)}/{str(y)}/ard/{str(x)}X{str(y)}Y_ard.hkl')[..., 0:10]
-        return ard
-
-    # Load data for each tile
-    s2_a = load_ard(tile_idx_a).flatten()
-    s2_b = load_ard(tile_idx_b).flatten()
-    s2_c = load_ard(tile_idx_c).flatten()
-
-    # Determine common axis limits
-    binwidth = 0.01
-    global_min = min(s2_a.min(), s2_b.min(), s2_c.min())
-    global_max = max(s2_a.max(), s2_b.max(), s2_c.max())
-    bins = np.arange(global_min, global_max + binwidth, binwidth)
-
-    plt.figure(figsize=(20,20))
-    band_counter = 0
-    
-    for i in range(1, 11):
-        plt.subplot(4,3,i)
-        plt.hist(s2_a[..., band_counter].flatten(), alpha=0.5, label=str(tile_idx_a), edgecolor="black", bins=bins)
-        plt.hist(s2_b[..., band_counter].flatten(), alpha=0.3, label=str(tile_idx_b), edgecolor="black", bins=bins)
-        plt.hist(s2_c[..., band_counter].flatten(), alpha=0.3, label=str(tile_idx_c), edgecolor="black", bins=bins)
-        
-        plt.xlim(0.0, 0.5)
-        plt.xticks(np.arange(0.0, 0.5, 0.1))
-        plt.title(title + f' Band {str(band_counter)}')
-        #plt.legend();
-
-        band_counter += 1
-
-    return None
-
-def hist_individual_tile(
-    location: str,
-    tile_idx_a: tuple,
-    tile_idx_b: tuple,
-    tile_idx_c: tuple,
-    tile_idx_d: tuple,
-    title: str,
-    color_dict: dict,
-    output_file: str = None
-):
-    '''
-    Create histograms of Sentinel-2 data for four tiles.
-
-    Parameters:
-    - location (str): The country.
-    - tile_idx_[a-d] (tuple): The (x, y) coordinates of each tile.
-    - title (str): Title for the figure.
-    - color_dict (dict): Mapping of land use class to color.
-    - output_file (str): Optional path to save the figure.
-    '''
-    def load_ard(tile_idx):
-        x, y = tile_idx
-        ard = hkl.load(f'../../tmp/{location}/{x}/{y}/ard/{x}X{y}Y_ard.hkl')[..., 0:10]
-        return ard
-
-    # Load Sentinel-2 data for each tile
-    s2_tiles = [load_ard(idx).flatten() for idx in [tile_idx_a, tile_idx_b, tile_idx_c, tile_idx_d]]
-    systems = ['monoculture', 'agroforestry (cocoa)', 'agroforestry (shea)', 'natural']
-    tile_indices = [tile_idx_a, tile_idx_b, tile_idx_c, tile_idx_d]
-
-    # Add new color for agroforestry2
-    color_dict = color_dict.copy()
-    color_dict['agroforestry (cocoa)'] = '#4dc348'
-    color_dict['agroforestry (shea)'] = '#72dc68'
-
-    # Calculate global bin range
-    binwidth = 0.01
-    global_min = min(data.min() for data in s2_tiles)
-    global_max = max(data.max() for data in s2_tiles)
-    bins = np.arange(global_min, global_max + binwidth, binwidth)
-
-    xlim = (0.0, 0.6)
-    xticks = np.arange(0.0, 0.6, 0.1)
-
-    # Create 1x4 subplot
-    fig, axes = plt.subplots(1, 4, figsize=(22, 5), sharex=True, sharey=True)
-
-    for ax, tile_idx, data, sys in zip(axes, tile_indices, s2_tiles, systems):
-        ax.hist(
-            data,
-            alpha=0.6,
-            label=str(tile_idx),
-            edgecolor="black",
-            bins=bins,
-            color=color_dict.get(sys, "#cccccc")
-        )
-        ax.set_xlim(xlim)
-        ax.set_xticks(xticks)
-        ax.set_title(f"{sys.capitalize()} System")
-        ax.set_xlabel("Reflectance Value")
-        ax.set_ylabel("Pixel Frequency")
-
-    fig.suptitle(title)
-    plt.tight_layout()
-
-    # Add legend to the figure
-    # handles = [plt.Line2D([0], [0], color=color, lw=4) for color in colors]
-    # labels = [str(tile_idx) for tile_idx in tile_indices]
-    # fig.legend(handles, 
-    #            labels, 
-    #            loc='upper right', 
-    #            title="Tiles")
-    # plt.legend(title="System", loc="upper left", bbox_to_anchor=(1.05, 1))
-
-    if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
-
-    plt.show()
-
-    return None
-
 def heat_compare_ard(location, tile_idx_a, tile_idx_b):
     '''
     Type: Seaborn heatmap
@@ -318,34 +185,6 @@ def heat_compare_ard(location, tile_idx_a, tile_idx_b):
             #             xticklabels=False, 
             #             yticklabels=False,
             #             cbar_kws = {'ticks' : [ard_b.min(), ard_b.max()]}).set_title(title_b);
-
-    return None
-
-def heat_compare_arrays(arr_a, arr_b, vmin, vmax, title_a, title_b):
-    '''
-    Type: Seaborn heatmap
-    Purpose: Compare and visualize two files (could be s2 data, ARD, feats, etc.)
-    Requires 2D input arrays with shape (618, 614, 1)
-    
-    '''
-
-    plt.figure(figsize=(11,4))
-    plt.subplot(1,2,1)
-    sns.heatmap(arr_a, 
-                xticklabels=False, 
-                yticklabels=False,
-                cbar_kws = {'ticks' : [arr_a.min(), arr_a.max()]},
-                vmin=vmin,
-                vmax=vmax,
-                ).set_title(str(title_a))
-        
-    plt.subplot(1,2,2)
-    sns.heatmap(arr_b, 
-                xticklabels=False, 
-                yticklabels=False,
-                vmin=vmin,
-                vmax=vmax,
-                cbar_kws = {'ticks' : [arr_b.min(), arr_b.max()]}).set_title(str(title_b));
 
     return None
 
@@ -568,7 +407,7 @@ def learning_curve_catboost(X_train_all,
     
     colors = ['royalblue', 'maroon']
 
-    plt.figure(figsize=(12, 7))
+    fig, ax = plt.subplots(figsize=(12, 7))   
 
     # Initialize CatBoost model
     catboost = CatBoostClassifier(verbose=0, iterations=300)
@@ -580,8 +419,8 @@ def learning_curve_catboost(X_train_all,
     )
     train_scores_mean_ttc = np.mean(train_scores_ttc, axis=1)
     test_scores_mean_ttc = np.mean(test_scores_ttc, axis=1)
-    plt.plot(train_sizes_ttc, train_scores_mean_ttc, "o--", color=colors[0], label="Train (with TL)")
-    plt.plot(train_sizes_ttc, test_scores_mean_ttc, "o-", color=colors[0], label="Test (with TL)")
+    ax.plot(train_sizes_ttc, train_scores_mean_ttc, "o--", color=colors[0], label="Train (with TL)")
+    ax.plot(train_sizes_ttc, test_scores_mean_ttc, "o-", color=colors[0], label="Test (with TL)")
 
     # Plot learning curve for model without TTC features
     train_sizes, train_scores, test_scores = learning_curve(
@@ -589,23 +428,25 @@ def learning_curve_catboost(X_train_all,
     )
     train_scores_mean = np.mean(train_scores, axis=1)
     test_scores_mean = np.mean(test_scores, axis=1)
-    plt.plot(train_sizes, train_scores_mean, "o--", color=colors[1], label="Train (without TL)")
-    plt.plot(train_sizes, test_scores_mean, "o-", color=colors[1], label="Test (without TL)")
+    ax.plot(train_sizes, train_scores_mean, "o--", color=colors[1], label="Train (without TL)")
+    ax.plot(train_sizes, test_scores_mean, "o-", color=colors[1], label="Test (without TL)")
 
     # Formatting the plot
-    plt.axhline(y=0.80, color='red', linestyle='--', label='Target Accuracy')
-    plt.grid()
-    plt.xlim([train_sizes.min() - 10000, train_sizes.max() + 10000])
-    plt.ylim([0.0, 1.2])
-    plt.title("Learning Curve Comparison")
-    plt.xlabel("Number of Training Samples")
-    plt.ylabel("Score")
-    plt.legend(title="CatBoost Model", loc="lower right")
+    ax.axhline(y=0.80, color='red', linestyle='--', label='Target Accuracy')
+    ax.grid()
+    ax.set_xlim([train_sizes.min() - 10000, train_sizes.max() + 10000])
+    ax.set_ylim([0.0, 1.2])
+    ax.set_title("Learning curve comparison")
+    ax.set_xlabel("Number of training samples")
+    ax.set_ylabel("Score")
 
     plt.tight_layout()
-    plt.show()
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file + '.pdf', dpi=300, bbox_inches='tight', facecolor='white')
+        plt.savefig(output_file + '.svg', format='svg', bbox_inches='tight', facecolor='white')
+
+    plt.show()
+
     return None
 
 
@@ -662,114 +503,81 @@ def roc_auc_curve_catboost(X_train_all, X_train_dropped, X_test, y_train, y_test
     plt.show()
 
 
-def style_axis(ax, 
-               xlabel: str, 
-               ylabel: str, 
-               xgrid: bool,
-               ygrid:bool,
-               title: str = None, 
-               grid_color: str = '#DDDDDD',
-               tick_format: str = None):
-    """
-    Applies consistent styling to the axes, including labels and gridlines.
-
-    Parameters:
-    ax (matplotlib.axes.Axes): The axis to be styled.
-    xlabel (str): The label for the x-axis.
-    ylabel (str): The label for the y-axis.
-    gridlines (bool): Option to add gridlines to the chart background.
-    title (str, optional): The title of the chart.
-    grid_color (str, optional): The color of the gridlines. Default is '#DDDDDD'.
-    """
-    # Remove unnecessary spines
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-
-    # Style the bottom and left spines
-    ax.spines['bottom'].set_color(grid_color)
-    ax.spines['left'].set_color(grid_color)
-    
-    # Set gridlines and axis below the plot elements
-    ax.yaxis.grid(ygrid, color=grid_color)
-    ax.xaxis.grid(xgrid,color=grid_color)
-    ax.set_axisbelow(True)
-    
-    # Set the axis labels
-    ax.set_xlabel(xlabel, labelpad=15)
-    ax.set_ylabel(ylabel, labelpad=15)
-    if tick_format is not None:
-        ax.ticklabel_format(style='plain', axis='y')
-
-    # Optionally set the title
-    if title:
-        ax.set_title(title, pad=15)
-
-def horizontal_stacked_bar(df: pd.DataFrame, 
-                           title: str,
+def horizontal_stacked_bar(csv: str, 
+                           region: str,
                            color_dict: dict,
                            sort_by: str,
-                           output_file: str = None,
-                           dpi: int = 300):
+                           dpi: int = 300,
+                           alpha: float = 1.0,
+                           figsize: tuple = (13, 8)):
     """
     Creates a horizontal 100% stacked bar chart showing the percentage 
-    area for different tree cover classes per district.
+    area for different tree cover classes per district in a given region.
 
     Parameters:
     df (pd.DataFrame): DataFrame containing the data.
-    title (str): Title of the chart.
+    region (str): Region name to filter.
     color_dict (dict): Dictionary mapping classes to colors.
-    categories (list): List of land use class columns to include in the stacked bar.
-    output_file (str): File path to save the chart (optional).
-    dpi (int): Resolution for the saved chart.
+    sort_by (str): Column to sort by.
+    output_file (str): Path to save the plot.
+    dpi (int): Resolution of saved figure.
+    alpha (float): Transparency of bars.
+    figsize (tuple): Size of the figure.
     """
-    df = df.rename(columns={'No Vegetation': 'Background'})
-    categories = ['Agroforestry', 'Natural', 'Monoculture', 'No vegetation']
+    df = pd.read_csv(csv)
+    df = df[df["Zone"] == region]
+    categories = ['Agroforestry (ha)', 'Natural (ha)', 'Monoculture (ha)', 'Background (ha)']
+    clean_categories = [re.sub(r"\s*\(.*?\)", "", c) for c in categories]
 
-    # Normalize the data to percentages
+    # Normalize to percentages
     df[categories] = df[categories].div(df[categories].sum(axis=1), axis=0) * 100
-    
-    # Sort the DataFrame by Agroforestry percentage (descending)
+
+    # Sort by the chosen column
     df = df.sort_values(by=sort_by, ascending=False)
+    fontsize=14
 
-    fig, ax = plt.subplots(figsize=(13,8))
+    # Plot
+    fig, ax = plt.subplots(figsize=figsize)
 
-    # Initialize the left position for stacking
     left = np.zeros(len(df))
 
-    # Plot each category as a horizontal bar
-    for category in categories:
+    for cat_label, cat_col in zip(clean_categories, categories):
         bars = ax.barh(
-            df.district, 
-            df[category], 
+            df["District"], 
+            df[cat_col], 
             left=left, 
-            label=category, 
-            color=color_dict.get(category, "#cccccc")
+            label=cat_label,  # <-- clean label
+            color=color_dict.get(cat_label, "#cccccc"),
+            alpha=alpha
         )
-        for bar, value in zip(bars, df[category]):
-            if value > 1:
+        for bar, value in zip(bars, df[cat_col]):
+            if value > 3:
                 ax.text(bar.get_x() + .4,
                         bar.get_y() + bar.get_height() / 2,
                         f'{value:.0f}%',
                         va='center', ha='left',
-                        color='white', fontsize=8.5)
-        left += df[category].values
-
+                        color='black', fontsize=fontsize)
+        left += df[cat_col].values
 
     # Style the chart
     style_axis(
         ax=ax,
-        xlabel="Percentage Area (%)",
+        xlabel=" ",
         ylabel=" ",
-        title=title,
+        title=f" ",
         xgrid=True,
-        ygrid=False
+        ygrid=False,
+        fontsize=fontsize,
     )
     ax.set_xlim(0, 100)
-    ax.legend(title="System", loc="upper left", bbox_to_anchor=(1.05, 1))
+    ax.legend(title="System", loc="upper left", bbox_to_anchor=(1.05, 1), fontsize=fontsize)
     ax.set_xticks([])
+    ax.tick_params(axis='y', labelsize=fontsize)
+
+
     plt.tight_layout()
-    if output_file:
-        plt.savefig(output_file, dpi=dpi, bbox_inches='tight')
+    df.to_csv(f'../../data/figures/h_stacked_bar_{region}_data.csv')
+    plt.savefig(f'../../data/figures/h_stacked_bar_{region}.png', dpi=dpi, bbox_inches='tight')
     plt.show()
 
 
@@ -822,4 +630,71 @@ def vertical_stacked_bar(df: pd.DataFrame,
     plt.tight_layout()
     if output_file:
         plt.savefig(output_file, dpi=dpi, bbox_inches='tight')
+    plt.show()
+
+def plot_feature_importance(df: pd.DataFrame, 
+                            figsize: tuple = (8, 10),
+                            fontsize= 12,
+                            dpi: int = 300,
+                            output_file = None):
+    """
+    Plots a horizontal bar chart of selected features by their importance scores using matplotlib.
+
+    Parameters:
+    - df (pd.DataFrame): DataFrame containing 'feature_names', 'feature_importance', 'category', and 'selected' columns.
+    - figsize (tuple): Size of the figure (width, height).
+    """
+
+    # Filter to selected features only and sort
+    df_selected = df[df["selected"] == True].copy()
+    df_selected = df_selected.sort_values(by="feature_importance", ascending=True)
+
+    # Update TTC label to 'Extracted Tree Features'
+    df_selected["category"] = df_selected["category"].replace({"TTC": "TTC Embeddings"})
+
+    # Define an updated color palette
+    palette = {
+        "Sentinel 2": "#4195d2",                    # cool blue
+        "Sentinel 1": "#9e9ac8",                    # muted purple
+        "TTC Embeddings": "#037d34ab",          # deep green
+        "DEM": "#fe8266",                           # light orange
+        "Texture (green band)": "#93d95d",          # more distinct green
+        "Texture (red band)": "#d73027",            # dark red
+        "Texture (NIR band)": "#fdb863"             # warm yellow-orange
+    }
+
+    # Create plot
+    fig, ax = plt.subplots(figsize=figsize)
+    y_pos = range(len(df_selected))
+    colors = [palette.get(cat, "#cccccc") for cat in df_selected['category']]
+
+    bars = ax.barh(
+        y=y_pos,
+        width=df_selected['feature_importance'],
+        color=colors,
+    )
+
+    # Axis settings
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(df_selected['feature_names'])
+    ax.set_ylim(-0.5, len(df_selected) - 0.5)
+
+    style_axis(
+        ax=ax,
+        xlabel="Feature Importance Score",
+        ylabel="Feature Index",
+        title=" ",
+        xgrid=False,
+        ygrid=True,
+        fontsize=fontsize,
+    )
+
+    # Add legend manually
+    unique_cats = df_selected["category"].unique()
+    handles = [plt.Rectangle((0, 0), 1, 1, color=palette[cat]) for cat in unique_cats]
+    ax.legend(handles, unique_cats, title="Feature Categories", bbox_to_anchor=(1.05, 1), loc='upper left')
+    if output_file:
+        plt.savefig(output_file, dpi=dpi, bbox_inches='tight')
+    
+    plt.tight_layout()
     plt.show()
