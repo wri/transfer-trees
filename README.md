@@ -3,7 +3,7 @@
 ## Problem Statement
 Distinguishing natural and agricultural tree systems is critical for monitoring ecosystem services, commodity-driven deforestation, and restoration progress. In Ghana, this task is particularly challenging due to (1) high spectral similarity between certain trees, (2) the small minimum mapping units required to capture heterogeneous smallholder agricultural landscapes, and (3) persistent cloud cover and atmospheric haze that limit optical image quality.
 
-## Summary
+## Reseearch Summary
 This project applies a transfer learning approach to classify tree-based land use systems from satellite imagery. We leverage spatial embeddings extracted from a high-performing convolutional neural network originally trained for tree cover mapping and repurpose them for land use classification.
 
 We train a CatBoost classifier using a combination of Sentinel-1 and Sentinel-2 imagery, gray-level co-occurrence matrix (GLCM) texture features, and extracted spatial embeddings to classify four land use classes: **natural**, **agroforestry**, **monoculture**, and **other (background)**. Through comparative modeling and feature selection, we demonstrate consistent performance gains from incorporating both transfer-learned features and texture information.
@@ -16,73 +16,109 @@ Overall, the findings suggest that spatial embeddings learned for tree detection
 
 **View the data:** [Ghana EPA Restoration Monitoring Portal](https://environmental-protection-agency-epa-ghana.hub.arcgis.com/pages/generalmap) (_toggle on WRI Land Use_)
 
+![Pixel-based Land Use Classification Results](images/fig5.jpg)
+
 **Suggested citation:**  
 Ertel, J., J. Brandt, R. Rognstad, and E. Glen (2025). *Transfer learning to detect natural, monoculture, and agroforestry tree-based systems in Ghana using remote sensing*. Technical Note. Washington, DC: World Resources Institute. doi:10.46830/writn.24.00030
 
-![Pixel-based Land Use Classification Results](images/fig5.jpg)
+---
 
+## DVC Setup & Directory Structure
 
-## Repository Organization
+This section provides a guide to understand the structure of the `src` directory. The directory is designed to integrate with Data Version Control (DVC) to ensure reproducibility and efficient management of the project's machine learning pipeline.  
+
+This directory contains modular scripts and functions organized to support a DVC workflow. Each script performs a specific task within the pipeline, such as data preparation, model training, or evaluation. The pipeline stages are connected through DVC.
+
+### Why I chose to use DVC
+- Modular and reusable scripts.
+- Clear separation of pipeline stages.
+- Improved tracking for dependencies, outputs, and metadata.
+- Compatible with YAML-based pipeline configurations.
+
+---
+
+## Directory Structure
 ```
-├── LICENSE.txt
-├── README.md                                                  
-├── Dockerfile                                      
-├── params.yaml                      
-├── config.yaml                      
-├── dvc.yaml 
-├── dvc.lock 
-├── envs/                       
-├── src                                 <- Source code for use in this project.
-│   ├── __init__.py                        
-│   ├── stage_load_data.py          
-│   ├── stage_prep_features.py      
-│   ├── stage_select_and_tune.py    
-│   ├── stage_train_model.py        
-│   ├── stage_evaluate_model.py     
-│   ├── transfer_learning.py        
-│   │
-│   ├── load_data                       <- Scripts to download or generate data
-│   │   ├── __init__.py            
-│   │   └── s3_download.py           
-│   │
-│   ├── features                        <- Scripts to import and prepare modeling inputs
-│   │   ├── __init__.py             
-│   │   ├── PlantationsData.py      
-│   │   ├── create_xy.py            
-│   │   ├── feature_selection.py    
-│   │   ├── texture_analysis.py    
-│   │   ├── slow_glcm.py            
-│   │   └── fast_glcm.py            
-│   │    
-│   ├── model                           <- Scripts to train models, select features, tune
-│   │   ├── __init__.py             
-│   │   ├── train.py                   
-│   │   └── tune.py               
-│   │    
-│   ├── evaluation                      <- Graphics and figures from model evaluation
-│   │   ├── confusion_matrix_data.csv       
-│   │   ├── confusion_matrix.png            
-│   │   └── validation_visuals.py           
-│   │
-│   └── utils                           <- Scripts for utility functions
-│       ├── __init__.py             
-│       ├── cloud_removal.py         
-│       ├── interpolation.py          
-│       ├── proximal_steps.py        
-│       ├── indices.py                
-│       ├── logs.py                   
-│       ├── preprocessing.py         
-│       ├── validate_io.py          
-│       ├── quick_viz.py             
-│       └── mosaic.py               
-│
-├── notebooks                           <- Jupyter notebooks                         
-│   ├── analyses         
-│   ├── features     
-│   ├── modeling      
-│   └── training_data
-│
-├── .gitignore                     
-├── .dockerignore                  
-└── .dvcignore                   
+/src
+├── stage_load_data.py          # Scripts for ingesting raw data
+├── stage_prep_features.py      # Scripts for data cleaning, transformation, and feature engineering
+├── stage_train_model.py        # Script to train machine learning models
+├── stage_select_and_tune.py    # Script to perform hyperparameter tuning and feature selection
+├── stage_evaluate_model.py     # Script to evaluate model performance
+└── transfer_learning.py        # Script for running inference
 ```
+
+---
+
+## Setting Up the Environment
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/wri/transfer-trees.git
+   cd transfer-trees
+   ```
+
+2. **Install Dependencies:**
+   Create a virtual environment and install dependencies from `requirements.txt`:
+   ```bash
+   python -m venv env
+   source env/bin/activate  
+   pip install -r requirements.txt
+   ```
+
+3. **Install DVC:**
+   Ensure that DVC is installed for managing the pipeline:
+   ```bash
+   pip install dvc
+   ```
+
+4. **Initialize DVC:**
+   If DVC is not already initialized in the repository:
+   ```bash
+   dvc init
+   ```
+
+---
+
+## Using DVC Pipelines
+The pipeline is defined in the `dvc.yaml` file, with dependencies, parameters, and outputs explicitly stated for each stage.
+
+### Common Commands
+1. **Check the Pipeline:**
+   Verify the pipeline stages and dependencies:
+   ```bash
+   dvc dag
+   ```
+
+2. **Run the Pipeline:**
+   Execute the entire pipeline or specific stages:
+   ```bash
+   dvc repro
+   ```
+
+3. **Track Data Files:**
+   Add data files to DVC for versioning:
+   ```bash
+   dvc add data/raw_data.csv
+   ```
+
+4. **Push Data to Remote Storage:**
+   Ensure remote storage is configured in `.dvc/config`:
+   ```bash
+   dvc push
+   ```
+
+5. **Pull Data from Remote Storage:**
+   Retrieve data files for the pipeline:
+   ```bash
+   dvc pull
+   ```
+
+---
+
+## Parameters Management
+Pipeline parameters are defined in `params.yaml`. This file centralizes hyperparameters and configuration options for each stage of the pipeline. Update parameters as needed, and rerun the pipeline using `dvc repro` to propagate changes.
+
+---
+
+## Additional Resources
+- [DVC Documentation](https://dvc.org/doc)
