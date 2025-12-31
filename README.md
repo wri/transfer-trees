@@ -1,13 +1,17 @@
-# Transfer Learning for Land Use Classification in Ghana
+# Transfer Learning for Tree Classification in Ghana
 
-**Problem Statement**: Traditional classification methods struggle to distinguish natural and planted tree systems in cloud-prone, label scarce, heterogeneous landscapes like Ghana. We hypothesize that a transfer learning approach – leveraging [extracted tree features from a high performing neural network](https://github.com/wri/sentinel-tree-cover) – can significantly improve classification accuracy. To test this hypothesis, we apply a gradient boosting classification algorithm (CatBoost) to a combination of Sentinel-2 images, gray-level co-occurrence matrix (GLCM) texture features and extracted tree features. We assess whether the extracted features and GLCM texture features accelerate model learning and perform benchmarking against a standard deep learning technique. Through a feature selection exercise, we identify and validate the added value of the transferred features.
+**Problem Statement**: Differentiating between natural and agricultural trees using remote sensing is essential for assessing ecosystem services, commodity-driven deforestation, and restoration progress. In Ghana, distinguishing between these tree systems remains uniquely challenging because of multiple factors. These factors include high spectral similarity between certain systems; the small minimum mapping unit required to capture heterogenous, smallholder agricultural landscapes; and challenges such as persistent cloud cover and haze.
 
-Through a collaboration with Ghana's Environmnetal Protection Agency, the application of the method is illustrated for 26 priority administrative districts. The final product is a 10m resolution land use map of Ghana for the year 2020 that distinguishes between natural, monoculture and agroforestry systems.  
+**Summary**: We use a transfer learning approach to classify tree-based systems, leveraging extracted spatial embeddings from a high-performing neural network to improve classification accuracy in label-scarce environments. We applied a CatBoost classifier to a combination of Sentinel imagery, gray-level co-occurrence matrix texture features, and extracted spatial embeddings to classify four land use classes: natural, agroforestry, monoculture, and other (background). Through comparative modeling and feature selection exercises, we validate performance gains resulting from transfer learning and texture features. Building on [Brandt et al's](https://github.com/wri/sentinel-tree-cover) (2023) previous efforts to model tree cover across the tropics, we explore whether the spatial features extracted from convolutional neural network can be repurposed to classify land uses.
 
-![Pixel-based Land Use Classification Results](images/image.png)
+Through a collaboration with Ghana's Environmnetal Protection Agency, the method is demonstrated for 26 priority districts, resulting in a 10-meter resolution land use map for 2020. Our findings suggest the spatial embeddings extracted from the tree cover model offer value beyond their original task and represent a scalable path forward for broader monitoring efforts.
 
-## ML Pipeline Overview
-![Processing Pipeline](images/transfer_learning_pipeline.png)
+Download the paper: [WRI Technical Note](https://www.wri.org/research/transfer-learning-detect-natural-monoculture-and-agroforestry-tree-based-systems-ghana)
+View the data: [Ghana EPA Restoration Monitoring Portal](https://environmental-protection-agency-epa-ghana.hub.arcgis.com/pages/generalmap) (_toggle on WRI Land Use_)
+Suggested citation: Ertel, J., J. Brandt, R. Rognstad, and E. Glen 2025. “Transfer learning to detect natural, monoculture, and agroforestry tree-based systems in Ghana using remote sensing.” Technical Note. Washington, DC: World Resources Institute. Available online at doi.org/10.46830/writn.24.00030.
+
+![Pixel-based Land Use Classification Results](images/fig5.jpg)
+
 
 ## Repository Organization
 ```
@@ -79,6 +83,3 @@ Through a collaboration with Ghana's Environmnetal Protection Agency, the applic
 ```
 ## License
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE) file for details.
-
-## Citation
-Ertel, J., Brandt, J., Glen, E., & Rognstad, R. Transfer Learning for Detecting Natural, Monoculture, and Agroforestry Systems in Ghana. Technical Note. Washington, DC: World Resources Institute. _(Expected August 2025)_
