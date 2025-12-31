@@ -12,12 +12,9 @@ Building on the work of [Brandt et al. (2023)](https://github.com/wri/sentinel-t
 
 Overall, the findings suggest that spatial embeddings learned for tree detection retain meaningful information about land use structure, offering a scalable pathway for broader monitoring of natural and agricultural tree systems.
 
-**Download the paper:**  
-[WRI Technical Note](https://www.wri.org/research/transfer-learning-detect-natural-monoculture-and-agroforestry-tree-based-systems-ghana)
+**Download the paper:** [WRI Technical Note](https://www.wri.org/research/transfer-learning-detect-natural-monoculture-and-agroforestry-tree-based-systems-ghana)
 
-**View the data:**  
-[Ghana EPA Restoration Monitoring Portal](https://environmental-protection-agency-epa-ghana.hub.arcgis.com/pages/generalmap)  
-(_toggle on WRI Land Use_)
+**View the data:** [Ghana EPA Restoration Monitoring Portal](https://environmental-protection-agency-epa-ghana.hub.arcgis.com/pages/generalmap) (_toggle on WRI Land Use_)
 
 **Suggested citation:**  
 Ertel, J., J. Brandt, R. Rognstad, and E. Glen (2025). *Transfer learning to detect natural, monoculture, and agroforestry tree-based systems in Ghana using remote sensing*. Technical Note. Washington, DC: World Resources Institute. doi:10.46830/writn.24.00030
@@ -89,7 +86,3 @@ Ertel, J., J. Brandt, R. Rognstad, and E. Glen (2025). *Transfer learning to det
 ├── .dockerignore                  
 └── .dvcignore                   
 ```
-## License
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE) file for details.
-
-[images/fig5.jpg]: images/fig
