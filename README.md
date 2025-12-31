@@ -1,30 +1,40 @@
 # Transfer Learning for Tree Classification in Ghana
 
-**Problem Statement**: Differentiating between natural and agricultural trees using remote sensing is essential for assessing ecosystem services, commodity-driven deforestation, and restoration progress. In Ghana, distinguishing between these tree systems remains uniquely challenging because of multiple factors. These factors include high spectral similarity between certain systems; the small minimum mapping unit required to capture heterogenous, smallholder agricultural landscapes; and challenges such as persistent cloud cover and haze.
+## Problem Statement
+Distinguishing natural and agricultural tree systems is critical for monitoring ecosystem services, commodity-driven deforestation, and restoration progress. In Ghana, this task is particularly challenging due to (1) high spectral similarity between certain trees, (2) the small minimum mapping units required to capture heterogeneous smallholder agricultural landscapes, and (3) persistent cloud cover and atmospheric haze that limit optical image quality.
 
-**Summary**: We use a transfer learning approach to classify tree-based systems, leveraging extracted spatial embeddings from a high-performing neural network to improve classification accuracy in label-scarce environments. We applied a CatBoost classifier to a combination of Sentinel imagery, gray-level co-occurrence matrix texture features, and extracted spatial embeddings to classify four land use classes: natural, agroforestry, monoculture, and other (background). Through comparative modeling and feature selection exercises, we validate performance gains resulting from transfer learning and texture features. Building on [Brandt et al's](https://github.com/wri/sentinel-tree-cover) (2023) previous efforts to model tree cover across the tropics, we explore whether the spatial features extracted from convolutional neural network can be repurposed to classify land uses.
+## Summary
+This project applies a transfer learning approach to classify tree-based land use systems from satellite imagery. We leverage spatial embeddings extracted from a high-performing convolutional neural network originally trained for tree cover mapping and repurpose them for land use classification.
 
-Through a collaboration with Ghana's Environmnetal Protection Agency, the method is demonstrated for 26 priority districts, resulting in a 10-meter resolution land use map for 2020. Our findings suggest the spatial embeddings extracted from the tree cover model offer value beyond their original task and represent a scalable path forward for broader monitoring efforts.
+We train a CatBoost classifier using a combination of Sentinel-1 and Sentinel-2 imagery, gray-level co-occurrence matrix (GLCM) texture features, and extracted spatial embeddings to classify four land use classes: **natural**, **agroforestry**, **monoculture**, and **other (background)**. Through comparative modeling and feature selection, we demonstrate consistent performance gains from incorporating both transfer-learned features and texture information.
 
-Download the paper: [WRI Technical Note](https://www.wri.org/research/transfer-learning-detect-natural-monoculture-and-agroforestry-tree-based-systems-ghana)
-View the data: [Ghana EPA Restoration Monitoring Portal](https://environmental-protection-agency-epa-ghana.hub.arcgis.com/pages/generalmap) (_toggle on WRI Land Use_)
-Suggested citation: Ertel, J., J. Brandt, R. Rognstad, and E. Glen 2025. “Transfer learning to detect natural, monoculture, and agroforestry tree-based systems in Ghana using remote sensing.” Technical Note. Washington, DC: World Resources Institute. Available online at doi.org/10.46830/writn.24.00030.
+Building on the work of [Brandt et al. (2023)](https://github.com/wri/sentinel-tree-cover), this research explores whether learned spatial representations from a tree cover model can be reused to distinguish tree-based systems. In collaboration with Ghana’s Environmental Protection Agency, the method is demonstrated across 26 priority districts, resulting in a 10-meter resolution land use map for 2020.
+
+Overall, the findings suggest that spatial embeddings learned for tree detection retain meaningful information about land use structure, offering a scalable pathway for broader monitoring of natural and agricultural tree systems.
+
+**Download the paper:**  
+[WRI Technical Note](https://www.wri.org/research/transfer-learning-detect-natural-monoculture-and-agroforestry-tree-based-systems-ghana)
+
+**View the data:**  
+[Ghana EPA Restoration Monitoring Portal](https://environmental-protection-agency-epa-ghana.hub.arcgis.com/pages/generalmap)  
+(_toggle on WRI Land Use_)
+
+**Suggested citation:**  
+Ertel, J., J. Brandt, R. Rognstad, and E. Glen (2025). *Transfer learning to detect natural, monoculture, and agroforestry tree-based systems in Ghana using remote sensing*. Technical Note. Washington, DC: World Resources Institute. doi:10.46830/writn.24.00030
 
 ![Pixel-based Land Use Classification Results](images/fig5.jpg)
 
 
 ## Repository Organization
 ```
-├── LICENSE
-├── README.md                      
-├── contributing.md                  
-├── requirements.txt               
-├── Dockerfile                      
-├── environment.yaml                 
+├── LICENSE.txt
+├── README.md                                                  
+├── Dockerfile                                      
 ├── params.yaml                      
 ├── config.yaml                      
 ├── dvc.yaml 
-├── dvc.lock                        
+├── dvc.lock 
+├── envs/                       
 ├── src                                 <- Source code for use in this project.
 │   ├── __init__.py                        
 │   ├── stage_load_data.py          
@@ -33,8 +43,6 @@ Suggested citation: Ertel, J., J. Brandt, R. Rognstad, and E. Glen 2025. “Tran
 │   ├── stage_train_model.py        
 │   ├── stage_evaluate_model.py     
 │   ├── transfer_learning.py        
-│   │
-│   ├── transfer                        <- Scripts/steps to perform feature extraction
 │   │
 │   ├── load_data                       <- Scripts to download or generate data
 │   │   ├── __init__.py            
@@ -83,3 +91,5 @@ Suggested citation: Ertel, J., J. Brandt, R. Rognstad, and E. Glen 2025. “Tran
 ```
 ## License
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE) file for details.
+
+[images/fig5.jpg]: images/fig
