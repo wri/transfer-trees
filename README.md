@@ -1,84 +1,68 @@
-# Transfer Learning for Land Use Classification in Ghana
+# Transfer Learning for Tree Classification in Ghana
 
-**Problem Statement**: Traditional classification methods struggle to distinguish natural and planted tree systems in cloud-prone, label scarce, heterogeneous landscapes like Ghana. We hypothesize that a transfer learning approach – leveraging [extracted tree features from a high performing neural network](https://github.com/wri/sentinel-tree-cover) – can significantly improve classification accuracy. To test this hypothesis, we apply a gradient boosting classification algorithm (CatBoost) to a combination of Sentinel-2 images, gray-level co-occurrence matrix (GLCM) texture features and extracted tree features. We assess whether the extracted features and GLCM texture features accelerate model learning and perform benchmarking against a standard deep learning technique. Through a feature selection exercise, we identify and validate the added value of the transferred features.
+Distinguishing natural and agricultural tree systems is critical for monitoring ecosystem services, commodity-driven deforestation, and restoration progress. From a remote sensing standpoint, this task is particularly challenging because: 
+* Certain trees exhibit high spectral similarity
+* Highly heterogeneous, smallholder agricultural landscapes require a small minimum mapping unit to detect differences
+* Regions with persistent cloud cover and atmospheric haze reduce optical image quality
 
-Through a collaboration with Ghana's Environmnetal Protection Agency, the application of the method is illustrated for 26 priority administrative districts. The final product is a 10m resolution land use map of Ghana for the year 2020 that distinguishes between natural, monoculture and agroforestry systems.  
+The distinction is critical for restoration monitoring applications, as gains in tree cover cannot be meaningfully assessed
+without understanding whether they result from a successful restoration intervention or agricultural expansion. 
 
-![Pixel-based Land Use Classification Results](images/image.png)
+## Research Summary
+This project applies a transfer learning approach to classify tree-based land use systems from satellite imagery. We leverage spatial embeddings extracted from a high-performing convolutional neural network originally trained for tree cover mapping ([Brandt et al., 2023](https://github.com/wri/sentinel-tree-cover)) and repurpose them for land use classification.
 
-## ML Pipeline Overview
-![Processing Pipeline](images/transfer_learning_pipeline.png)
+We train a CatBoost classifier using a combination of Sentinel-1 and Sentinel-2 imagery, gray-level co-occurrence matrix (GLCM) texture features, and extracted spatial embeddings to classify four land use classes: **natural**, **agroforestry**, **monoculture**, and **other (background)**. Through comparative modeling and feature selection, we demonstrate consistent performance gains from incorporating both transfer-learned features and texture information.
 
-## Repository Organization
+In collaboration with Ghana’s Environmental Protection Agency, the method is demonstrated across 26 priority districts, resulting in a 10-meter resolution land use map for 2020. Overall, the findings suggest that spatial embeddings learned for tree detection retain meaningful information about land use structure, offering a scalable pathway for broader monitoring of natural and agricultural tree systems.
+
+**Download the paper:** [Technical Note](https://www.wri.org/research/transfer-learning-detect-natural-monoculture-and-agroforestry-tree-based-systems-ghana)  
+**View the data:** [Ghana EPA Monitoring Portal](https://environmental-protection-agency-epa-ghana.hub.arcgis.com/pages/generalmap) (_toggle on WRI Land Use_)
+
+![Pixel-based Land Use Classification Results](images/fig5.jpg)
+
+**Suggested citation:**  
+Ertel, J., J. Brandt, R. Rognstad, and E. Glen (2025). *Transfer learning to detect natural, monoculture, and agroforestry tree-based systems in Ghana using remote sensing*. Technical Note. Washington, DC: World Resources Institute. doi:10.46830/writn.24.00030
+
+---
+## Machine Learning Pipeline
+The predictive features for the classification task include Sentinel-1 and Sentinel-2 imagery, spatial embeddings and texture features. Texture features were derived from Sentinel-2 imagery using a GLCM analysis method. The figure below shows the machine learning pipeline, including pre- and post-processing steps.
+
+![ML Workflow](images/ml_pipeline.jpg)
+
+### DVC Setup & Directory Structure
+
+The `src` directory is designed to integrate with Data Version Control (DVC) to ensure reproducibility and efficient management of the project's machine learning pipeline.  
+
+This directory contains modular scripts and functions organized to support a DVC workflow. Each script performs a specific task within the pipeline, such as data preparation, model training, or evaluation. The pipeline stages are connected through DVC.
+
+#### Why DVC?
+- Clear separation of pipeline stages.
+- Improved tracking for dependencies, outputs, and metadata.
+- Compatible with YAML-based pipeline configurations.
+
+---
+
+### Directory Structure
 ```
-├── LICENSE
-├── README.md                      
-├── contributing.md                  
-├── requirements.txt               
-├── Dockerfile                      
-├── environment.yaml                 
-├── params.yaml                      
-├── config.yaml                      
-├── dvc.yaml 
-├── dvc.lock                        
-├── src                                 <- Source code for use in this project.
-│   ├── __init__.py                        
-│   ├── stage_load_data.py          
-│   ├── stage_prep_features.py      
-│   ├── stage_select_and_tune.py    
-│   ├── stage_train_model.py        
-│   ├── stage_evaluate_model.py     
-│   ├── transfer_learning.py        
-│   │
-│   ├── transfer                        <- Scripts/steps to perform feature extraction
-│   │
-│   ├── load_data                       <- Scripts to download or generate data
-│   │   ├── __init__.py            
-│   │   └── s3_download.py           
-│   │
-│   ├── features                        <- Scripts to import and prepare modeling inputs
-│   │   ├── __init__.py             
-│   │   ├── PlantationsData.py      
-│   │   ├── create_xy.py            
-│   │   ├── feature_selection.py    
-│   │   ├── texture_analysis.py    
-│   │   ├── slow_glcm.py            
-│   │   └── fast_glcm.py            
-│   │    
-│   ├── model                           <- Scripts to train models, select features, tune
-│   │   ├── __init__.py             
-│   │   ├── train.py                   
-│   │   └── tune.py               
-│   │    
-│   ├── evaluation                      <- Graphics and figures from model evaluation
-│   │   ├── confusion_matrix_data.csv       
-│   │   ├── confusion_matrix.png            
-│   │   └── validation_visuals.py           
-│   │
-│   └── utils                           <- Scripts for utility functions
-│       ├── __init__.py             
-│       ├── cloud_removal.py         
-│       ├── interpolation.py          
-│       ├── proximal_steps.py        
-│       ├── indices.py                
-│       ├── logs.py                   
-│       ├── preprocessing.py         
-│       ├── validate_io.py          
-│       ├── quick_viz.py             
-│       └── mosaic.py               
-│
-├── notebooks                           <- Jupyter notebooks                         
-│   ├── analyses         
-│   ├── features     
-│   ├── modeling      
-│   └── training_data
-│
-├── .gitignore                     
-├── .dockerignore                  
-└── .dvcignore                   
+/src
+├── stage_load_data.py          # Scripts for ingesting raw data
+├── stage_prep_features.py      # Scripts for data cleaning, transformation, and feature engineering
+├── stage_train_model.py        # Script to train machine learning models
+├── stage_select_and_tune.py    # Script to perform hyperparameter tuning and feature selection
+├── stage_evaluate_model.py     # Script to evaluate model performance
+└── transfer_learning.py        # Script for running inference
 ```
-## License
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE) file for details.
+---
 
-## Citation
-Ertel, J., Brandt, J., Glen, E., & Rognstad, R. Transfer Learning for Detecting Natural, Monoculture, and Agroforestry Systems in Ghana. Technical Note. Washington, DC: World Resources Institute. _(Expected August 2025)_
+### Using DVC Pipelines
+The pipeline is defined in the `dvc.yaml` file, with dependencies, parameters, and outputs explicitly stated for each stage.
+
+### Parameters Management
+Pipeline parameters are defined in `params.yaml`. This file centralizes hyperparameters and configuration options for each stage of the pipeline. Update parameters as needed, and rerun the pipeline using `dvc repro` to propagate changes.
+
+---
+
+### Additional Resources
+- [Tropical Tree Cover](https://github.com/wri/sentinel-tree-cover)
+- [CatBoost Documentation](https://catboost.ai/docs/en/)
+- [DVC Documentation](https://dvc.org/doc)

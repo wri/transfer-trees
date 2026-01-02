@@ -1,101 +1,64 @@
-# DVC Setup & Directory Structure
-
-This README provides a guide to understand the structure of the `src` directory. The directory is designed to integrate with Data Version Control (DVC) to ensure reproducibility and efficient management of the project's machine learning pipeline.
-
-## Repository Overview
-This directory contains modular scripts and functions organized to support a DVC workflow. Each script performs a specific task within the pipeline, such as data preparation, model training, or evaluation. The pipeline stages are connected through DVC.
-
-### Key Features
-- Modular and reusable scripts.
-- Clear separation of pipeline stages.
-- Integrated with DVC for tracking dependencies, outputs, and metadata.
-- Compatible with YAML-based pipeline configurations.
-
----
-
-## Directory Structure
+## Repository Organization
 ```
-/src
-├── stage_load_data.py          # Scripts for ingesting raw data
-├── stage_prep_features.py      # Scripts for data cleaning, transformation, and feature engineering
-├── stage_train_model.py        # Script to train machine learning models
-├── stage_select_and_tune.py    # Script to perform hyperparameter tuning and feature selection
-├── stage_evaluate_model.py     # Script to evaluate model performance
-└── transfer_learning.py        # Script for running inference
+├── LICENSE.txt
+├── README.md                                                  
+├── Dockerfile                                      
+├── params.yaml                      
+├── config.yaml                      
+├── dvc.yaml 
+├── dvc.lock 
+├── envs/                       
+├── src                                 <- Source code for use in this project.
+│   ├── __init__.py                        
+│   ├── stage_load_data.py          
+│   ├── stage_prep_features.py      
+│   ├── stage_select_and_tune.py    
+│   ├── stage_train_model.py        
+│   ├── stage_evaluate_model.py     
+│   ├── transfer_learning.py        
+│   │
+│   ├── load_data                       <- Scripts to download or generate data
+│   │   ├── __init__.py            
+│   │   └── s3_download.py           
+│   │
+│   ├── features                        <- Scripts to import and prepare modeling inputs
+│   │   ├── __init__.py             
+│   │   ├── PlantationsData.py      
+│   │   ├── create_xy.py            
+│   │   ├── feature_selection.py    
+│   │   ├── texture_analysis.py    
+│   │   ├── slow_glcm.py            
+│   │   └── fast_glcm.py            
+│   │    
+│   ├── model                           <- Scripts to train models, select features, tune
+│   │   ├── __init__.py             
+│   │   ├── train.py                   
+│   │   └── tune.py               
+│   │    
+│   ├── evaluation                      <- Graphics and figures from model evaluation
+│   │   ├── confusion_matrix_data.csv       
+│   │   ├── confusion_matrix.png            
+│   │   └── validation_visuals.py           
+│   │
+│   └── utils                           <- Scripts for utility functions
+│       ├── __init__.py             
+│       ├── cloud_removal.py         
+│       ├── interpolation.py          
+│       ├── proximal_steps.py        
+│       ├── indices.py                
+│       ├── logs.py                   
+│       ├── preprocessing.py         
+│       ├── validate_io.py          
+│       ├── quick_viz.py             
+│       └── mosaic.py               
+│
+├── notebooks                           <- Jupyter notebooks                         
+│   ├── analyses         
+│   ├── features     
+│   ├── modeling      
+│   └── training_data
+│
+├── .gitignore                     
+├── .dockerignore                  
+└── .dvcignore                   
 ```
-
----
-
-## Setting Up the Environment
-1. **Clone the Repository:**
-   ```bash
-   git clone https://github.com/wri/plantation_classifier.git
-   cd plantation_classifier
-   ```
-
-2. **Install Dependencies:**
-   Create a virtual environment and install dependencies from `requirements.txt`:
-   ```bash
-   python -m venv env
-   source env/bin/activate  # On Windows: env\Scripts\activate
-   pip install -r requirements.txt
-   ```
-
-3. **Install DVC:**
-   Ensure that DVC is installed for managing the pipeline:
-   ```bash
-   pip install dvc
-   ```
-
-4. **Initialize DVC:**
-   If DVC is not already initialized in the repository:
-   ```bash
-   dvc init
-   ```
-
----
-
-## Using DVC Pipelines
-The pipeline is defined in the `dvc.yaml` file, with dependencies, parameters, and outputs explicitly stated for each stage.
-
-### Common Commands
-1. **Check the Pipeline:**
-   Verify the pipeline stages and dependencies:
-   ```bash
-   dvc dag
-   ```
-
-2. **Run the Pipeline:**
-   Execute the entire pipeline or specific stages:
-   ```bash
-   dvc repro
-   ```
-
-3. **Track Data Files:**
-   Add data files to DVC for versioning:
-   ```bash
-   dvc add data/raw_data.csv
-   ```
-
-4. **Push Data to Remote Storage:**
-   Ensure remote storage is configured in `.dvc/config`:
-   ```bash
-   dvc push
-   ```
-
-5. **Pull Data from Remote Storage:**
-   Retrieve data files for the pipeline:
-   ```bash
-   dvc pull
-   ```
-
----
-
-## Parameters Management
-Pipeline parameters are defined in `params.yaml`. This file centralizes hyperparameters and configuration options for each stage of the pipeline. Update parameters as needed, and rerun the pipeline using `dvc repro` to propagate changes.
-
----
-
-## Additional Resources
-- [DVC Documentation](https://dvc.org/doc)
-- [Main Repository](https://github.com/wri/plantation_classifier)
